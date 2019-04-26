@@ -1,6 +1,6 @@
 README: How to use monocular.py
 
-Currently, the server is set up at /kevinren/monocular/monocular.py. Pass in a type, latitude, and longitude argument. The type argument must be one of 'shuttle' or 'yelp'.
+Currently, the server is set up at /kevinren/monocular/monocular.py. Pass in a type, lat (latitude), and lon (longitude) argument. The type argument must be one of 'shuttle' or 'yelp'.
 
 If the type argument is 'shuttle', then MIT Tech Shuttle information will be retrieved. If no shuttles are running, the script returns "ERROR: No shuttles found." If at least one shuttle is running, the script returns the closest stop name, followed by the number of shuttles (max 3) fetched from that stop, followed by the minutes until arrival of those shuttles, sorted from arriving soonest to latest. All distinct parameters (including the distinct times until arrival) are separated by newlines, for example:
 
