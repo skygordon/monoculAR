@@ -73,7 +73,7 @@ U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2 (U8G2_R0, A5, A4);
 void setup() {
   Serial.begin(115200);               // Set up serial port
   u8g2.begin();
-  u8g2.setFont(u8g2_font_6x12_mn);
+  u8g2.setFont(u8g2_font_ncenB08_tr); // choose a suitable font
   hungry = false; // variables to remember if hungry has been said
   shuttle = false; // variables to remember if shuttle has been said
   display_timer = -30000;
@@ -388,8 +388,8 @@ void update_info_http(){
   float voltage = analogRead(A6) * 2 * 3.3 / 4096; // get Battery Voltage (mV)
   float discharge_amt = discharge_from_voltage(voltage, 0.001); //get discharge amount using battery voltage
   drawBattery(1.0 - discharge_amt);
-  u8g2.drawStr(28,13,d);
-  u8g2.drawStr(68,13,t);
+  drawSteps();
+  u8g2.drawStr(28,13,t);
   u8g2.sendBuffer();
 }
 
@@ -403,7 +403,6 @@ void drawSun(){
 }
 
 void drawMoon(){
-  u8g2.setFont(u8g2_font_ncenB08_tr); // choose a suitable font
   u8g2.drawDisc(13, 8, 7, U8G2_DRAW_ALL);
   u8g2.setDrawColor(0);
   u8g2.drawDisc(17, 8, 8, U8G2_DRAW_ALL);
@@ -424,4 +423,14 @@ void drawBattery(float level){
   u8g2.drawLine(104,13,124,13);
   u8g2.drawBox(104+20,7,2,4);
   u8g2.drawBox(104,5,20*level,8);
+}
+
+void drawSteps(){
+  u8g2.drawFilledEllipse(70, 7, 2, 5, U8G2_DRAW_ALL);
+  u8g2.drawDisc(70, 13, 2, U8G2_DRAW_ALL);
+  u8g2.drawFilledEllipse(78, 5, 2, 5, U8G2_DRAW_ALL);
+  u8g2.drawDisc(78, 11, 2, U8G2_DRAW_ALL);
+  char num[5] = {0};
+  sprintf(num,"%d",steps);
+  u8g2.drawStr(84, 13, num);
 }

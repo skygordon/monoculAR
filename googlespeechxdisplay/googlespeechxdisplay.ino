@@ -42,8 +42,8 @@ int old_button_state; //used for detecting button edges
 uint32_t time_since_sample;      // used for microsecond timing
 
 char speech_data[ENC_LEN + 200] = {0}; //global used for collecting speech data
-const char* NETWORK = "MIT";               //"6s08";     // your network SSID (name of wifi network)
-const char* PASSWORD = "";                  //"iesc6s08"; // your network password
+const char* NETWORK = "6s08";               //"6s08";     // your network SSID (name of wifi network)
+const char* PASSWORD = "iesc6s08";                  //"iesc6s08"; // your network password
 const char*  SERVER = "speech.google.com";  // Server URL
 
 uint8_t old_val;
@@ -330,6 +330,7 @@ void update_info_http(){
   pch = strtok(icon,"=");
   icon = strtok(NULL,"=");
   u8g2.clearBuffer();
+  u8g2.setFont(u8g2_font_ncenB08_tr); // choose a suitable font
   if (strcmp(icon,"cloud")==0){
     drawCloud();
   }
@@ -358,7 +359,6 @@ void drawSun(){
 }
 
 void drawMoon(){
-  u8g2.setFont(u8g2_font_ncenB08_tr); // choose a suitable font
   u8g2.drawDisc(13, 8, 7, U8G2_DRAW_ALL);
   u8g2.setDrawColor(0);
   u8g2.drawDisc(17, 8, 8, U8G2_DRAW_ALL);
