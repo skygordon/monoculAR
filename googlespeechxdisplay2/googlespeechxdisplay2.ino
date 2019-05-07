@@ -35,8 +35,12 @@ char speech_response[OUT_BUFFER_SIZE]; //char array buffer to hold HTTP request 
 char display_response[OUT_BUFFER_SIZE]; //char array buffer to hold HTTP response for serverside
 char request[IN_BUFFER_SIZE];
 
-const int DISPLAY_UPDATE = 30000; //30 second delay between each call for time
-uint32_t display_timer ;
+const int DISPLAY_UPDATE = 1800000; //30 second delay between each call for time
+uint32_t display_timer;
+uint32_t second_timer;
+int t[3] = {0};
+char* d;
+char* icon;
 
 /* CONSTANTS */
 //Prefix to POST request:
@@ -76,7 +80,7 @@ void setup() {
   u8g2.setFont(u8g2_font_ncenB08_tr); // choose a suitable font
   hungry = false; // variables to remember if hungry has been said
   shuttle = false; // variables to remember if shuttle has been said
-  display_timer = -30000;
+  display_timer = -1800000;
   Serial.begin(115200); //begin serial comms
   delay(100); //wait a bit (100 ms)
   pinMode(PIN_1, INPUT_PULLUP);
@@ -109,6 +113,7 @@ void setup() {
     ESP.restart(); // restart the ESP (proper way)
   }
   timer = millis();
+  second_timer = millis();
   old_val = digitalRead(PIN_1);
   analogSetAttenuation(ADC_6db); //set to 6dB attenuation for 3.3V full scale reading.
   steps = 0; //initialize steps to zero!
@@ -119,14 +124,16 @@ void loop(){
   
 //Step Counter Code
 imu.readAccelData(imu.accelCount);
-  x = imu.accelCount[0]*imu.aRes;
-  y = imu.accelCount[1]*imu.aRes;
-  z = imu.accelCount[2]*imu.aRes;
+  x = 0; //imu.accelCount[0]*imu.aRes;
+  y = 0; //imu.accelCount[1]*imu.aRes;
+  z = 0; //imu.accelCount[2]*imu.aRes;
   float acc_mag = sqrt(x*x+y*y+z*z);
   float avg_acc_mag = (acc_mag + old_acc_mag + older_acc_mag) / 3.0;
   older_acc_mag = old_acc_mag;
   old_acc_mag = acc_mag;
   //finite state machine
+  //Serial.println("Acceleration Value is...");
+  //Serial.println(avg_acc_mag);
  switch(stepstate){
     case IDLE:
       if (avg_acc_mag > 1.2){  //values need to be tested/changed
@@ -137,6 +144,7 @@ imu.readAccelData(imu.accelCount);
     case PEAK:
       if (avg_acc_mag < 1.0){  //values need to be tested/changed
       stepstate = IDLE;
+      displayHeader();
         }
       break;
       } 
@@ -153,7 +161,20 @@ imu.readAccelData(imu.accelCount);
     doest_thou_speak();
   }
   old_button_state = button_state;
-
+  if (millis() - second_timer > 1000){
+    t[2] += 1;
+    if (t[2] >= 60){
+      Serial.println(t[1]);
+      t[2] -= 60;
+      t[1] += 1;
+      displayHeader();
+    }
+    if (t[1] >= 60){
+      t[1] -= 60;
+      t[0] += 1; 
+    }
+    second_timer = millis();
+  }
   //maintain display every 30s
   if (millis() - display_timer > DISPLAY_UPDATE){
     update_info_http();
@@ -365,15 +386,23 @@ void update_info_http(){
   Serial.println(request);
   do_http_request("608dev.net", request, display_response, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT,true);
   Serial.println(display_response);
-  char* t = strtok(display_response,"&");
-  char* d = strtok(NULL, "&");
-  char* icon = strtok(NULL, "&");
-  char* pch = strtok(t,"=");
-  t = strtok(NULL,"=");
+  char* time = strtok(display_response,"&");
+  d = strtok(NULL, "&");  
+  icon = strtok(NULL, "&");
+  char* pch = strtok(time,"=");
+  time = strtok(NULL,"=");
   pch = strtok(d,"=");
   d = strtok(NULL,"=");
+  Serial.println(time);
+  t[0] = atoi(strtok(time,":"));
+  t[1] = atoi(strtok(NULL,":"));
+  t[2] = atoi(strtok(NULL,":"));
   pch = strtok(icon,"=");
   icon = strtok(NULL,"=");
+  displayHeader();
+}
+
+void displayHeader(){
   u8g2.clearBuffer();
   if (strcmp(icon,"cloud")==0){
     drawCloud();
@@ -389,7 +418,9 @@ void update_info_http(){
   float discharge_amt = discharge_from_voltage(voltage, 0.001); //get discharge amount using battery voltage
   drawBattery(1.0 - discharge_amt);
   drawSteps();
-  u8g2.drawStr(28,13,t);
+  char time[5] = {0};
+  sprintf(time,"%d:%d",t[0],t[1]);
+  u8g2.drawStr(28,13,time);
   u8g2.sendBuffer();
 }
 
