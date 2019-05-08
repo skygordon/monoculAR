@@ -292,19 +292,21 @@ void doest_thou_speak(){
         Serial.println("Found Shuttle or shuttle!!");
        }
 
-      if (hungry&&shuttle){
+      if (hungry && shuttle) {
         Serial.println("Please only give one command at a time.");
         hungry = false;
         shuttle = false;
-       } else if (hungry){
+      } else if (hungry) {
+        get_restaurants();
         Serial.println("Here's some restaurants near you");
         hungry = false;
-       } else if (shuttle){
+      } else if (shuttle) {
+        get_shuttles();
         Serial.println("Here's the MIT shuttle schedule");
         shuttle = false;
-       } else {
+      } else {
         Serial.println("Sorry, I didn't hear a command. Try asking again by holding the button.");
-       }         
+      }         
     }
     Serial.println("-----------");
     client.stop();
@@ -316,8 +318,8 @@ void get_restaurants() {
   sprintf(request, "GET /sandbox/sc/kevinren/monocular/monocular.py?type=yelp&lat=%f&lon=%f HTTP/1.1\r\n",
           gps.location.lat(), gps.location.lng());
   strcat(request, "Host: 608dev.net\r\n\r\n");
-  do_http_request("608dev.net", request, response, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
-  char *x = strtok (response, "\n");
+  do_http_request("608dev.net", request, display_response, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
+  char *x = strtok (display_response, "\n");
   int num = atoi(x);
   int pos_y = 24;
 
@@ -365,13 +367,13 @@ void get_shuttles() {
   sprintf(request, "GET /sandbox/sc/kevinren/monocular/monocular.py?type=shuttle&lat=%f&lon=%f HTTP/1.1\r\n",
           gps.location.lat(), gps.location.lng());
   strcat(request, "Host: 608dev.net\r\n\r\n");
-  do_http_request("608dev.net", request, response, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
+  do_http_request("608dev.net", request, display_response, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
 
   u8g2.setDrawColor(0);
   u8g2.drawBox(0, 17, 150, 100);
   u8g2.setDrawColor(1);
 
-  char *stop_name = strtok (response, "\n");
+  char *stop_name = strtok (display_response, "\n");
   if (strcmp(stop_name, "0") == 0) {
     u8g2.drawStr(10, 24, "Error: No shuttles");
   } else {
@@ -487,7 +489,7 @@ void update_info_http(){
 
 void displayHeader(){
   //u8g2.clearBuffer();
-  u8g2.setFont(u8g2_font_ncenB08_tr); // choose a suitable font
+  //u8g2.setFont(u8g2_font_ncenB08_tf); // choose a suitable font
   u8g2.setDrawColor(0);
   u8g2.drawBox(0, 0, 150, 17);
   u8g2.setDrawColor(1);
