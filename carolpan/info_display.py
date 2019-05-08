@@ -14,7 +14,7 @@ def request_handler(request):
 
     # updating current day and time
     current_time = datetime.datetime.now()
-    time = current_time.strftime("%H:%M")
+    time = current_time.strftime("%H:%M:%S")
     date = current_time.strftime("%m/%d")
 
     # get longitude and latitude for accurate weather data
