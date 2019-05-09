@@ -33,11 +33,11 @@ def shuttle_req(lat, lon):
             best_d = p_d
             best_i = i
     if best_i == -1:
-        return 'ERROR: No shuttles found'
+        return '0\nERROR: No shuttles found'
     pred = stops[best_i]['predictions']
     times = [round(vehicle['seconds']/60, 1) for vehicle in pred]
     times.sort()
-    return '{}\n{}\n{} min\n'.format(stops[best_i]['title'], min(len(times), 3),
+    return '{}\n{} min\n'.format(stops[best_i]['title'],
                        ' min\n'.join(list(map(str,
                         times[:3] if len(times) > 3 else times))))
 

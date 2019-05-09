@@ -27,6 +27,7 @@ const int SAMPLE_FREQ = 8000;                          // Hz, telephone sample r
 const int SAMPLE_DURATION = 5;                        // duration of fixed sampling (seconds)
 const int NUM_SAMPLES = SAMPLE_FREQ * SAMPLE_DURATION;  // number of of samples
 const int ENC_LEN = (NUM_SAMPLES + 2 - ((NUM_SAMPLES + 2) % 3)) / 3 * 4;  // Encoded length of clip
+const int STORAGE_SIZE = 40;
 
 const uint16_t RESPONSE_TIMEOUT = 6000;
 const uint16_t OUT_BUFFER_SIZE = 1000; //size of buffer to hold HTTP response
@@ -34,6 +35,8 @@ const uint16_t IN_BUFFER_SIZE = 100;
 char speech_response[OUT_BUFFER_SIZE]; //char array buffer to hold HTTP request for Google Speech
 char display_response[OUT_BUFFER_SIZE]; //char array buffer to hold HTTP response for serverside
 char request[IN_BUFFER_SIZE];
+
+char storage[STORAGE_SIZE];
 
 const int DISPLAY_UPDATE = 1800000; //30 second delay between each call for time
 uint32_t display_timer;
@@ -288,24 +291,106 @@ void doest_thou_speak(){
         Serial.println("Found Shuttle or shuttle!!");
        }
 
-      if (hungry&&shuttle){
+      if (hungry && shuttle) {
         Serial.println("Please only give one command at a time.");
         hungry = false;
         shuttle = false;
-       } else if (hungry){
+      } else if (hungry) {
+        get_restaurants();
         Serial.println("Here's some restaurants near you");
         hungry = false;
-       } else if (shuttle){
+      } else if (shuttle) {
+        get_shuttles();
         Serial.println("Here's the MIT shuttle schedule");
         shuttle = false;
-       } else {
+      } else {
         Serial.println("Sorry, I didn't hear a command. Try asking again by holding the button.");
-       }         
+      }         
     }
     Serial.println("-----------");
     client.stop();
     Serial.println("done");
   }
+}
+
+void get_restaurants() {
+  sprintf(request, "GET /sandbox/sc/kevinren/monocular/monocular.py?type=yelp&lat=%f&lon=%f HTTP/1.1\r\n",
+          gps.location.lat(), gps.location.lng());
+  strcat(request, "Host: 608dev.net\r\n\r\n");
+  do_http_request("608dev.net", request, display_response, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
+  char *x = strtok (display_response, "\n");
+  int num = atoi(x);
+  int pos_y = 24;
+
+  u8g2.setDrawColor(0);
+  u8g2.drawBox(0, 17, 150, 100);
+  u8g2.setDrawColor(1);
+
+  u8g2.setCursor(5, pos_y);
+  for (int i = 0; i < num; i++) {
+    char *rest_name = strtok (NULL, "\n");
+    char *star_str = strtok(NULL, "\n");
+    int stars = star_str[0] - '0';
+    bool half_star = (star_str[1] == '.' && star_str[2] == '5');
+    char *type = strtok(NULL, "\n");
+    char *loc = strtok(NULL, "\n");
+    char *dist = strtok(NULL, "\n");
+    u8g2.setFont(u8g2_font_5x7_tf);
+    memset(storage, 0, STORAGE_SIZE);
+    snprintf(storage, 18, "%d. %s", i + 1, rest_name);
+    u8g2.print(storage);
+
+    u8g2.setFont(u8g2_font_unifont_t_symbols);
+    for (int j = 0; j < stars; j++) {
+      u8g2.drawGlyph(90 + 7 * j, pos_y + 3, 0x2605);
+    }
+    if (half_star) {
+      u8g2.drawGlyph(90 + 7 * stars, pos_y + 3, 0x2605);
+      u8g2.setDrawColor(0);
+      u8g2.drawBox(95 + 7 * stars, pos_y - 6, 3, 7);
+      u8g2.setDrawColor(1);
+    }
+    pos_y += 7;
+    u8g2.setFont(u8g2_font_u8glib_4_tf);
+    u8g2.setCursor(5, pos_y);
+    memset(storage, 0, STORAGE_SIZE);
+    snprintf(storage, 35, "%s, %s", type, loc);
+    u8g2.print(storage);
+    pos_y += 8;
+    u8g2.setCursor(5, pos_y);
+  }
+  u8g2.sendBuffer();
+}
+
+void get_shuttles() {
+  sprintf(request, "GET /sandbox/sc/kevinren/monocular/monocular.py?type=shuttle&lat=%f&lon=%f HTTP/1.1\r\n",
+          gps.location.lat(), gps.location.lng());
+  strcat(request, "Host: 608dev.net\r\n\r\n");
+  do_http_request("608dev.net", request, display_response, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
+
+  u8g2.setDrawColor(0);
+  u8g2.drawBox(0, 17, 150, 100);
+  u8g2.setDrawColor(1);
+
+  char *stop_name = strtok (display_response, "\n");
+  if (strcmp(stop_name, "0") == 0) {
+    u8g2.drawStr(10, 24, "Error: No shuttles");
+  } else {
+    int pos_y = 24;
+    u8g2.setCursor(5, pos_y);
+    u8g2.setFont(u8g2_font_5x7_tf);
+    memset(storage, 0, STORAGE_SIZE);
+    snprintf(storage, 25, "%s", stop_name);
+    u8g2.print(storage);
+    char *pch = strtok(NULL, "\n");
+    while (pch != NULL) {
+      pos_y += 10;
+      u8g2.setCursor(5, pos_y);
+      u8g2.print(pch);
+      pch = strtok(NULL, "\n");
+    }
+  }
+  u8g2.sendBuffer();
 }
 
 //function used to record audio at sample rate for a fixed nmber of samples
@@ -401,7 +486,11 @@ void update_info_http(){
 }
 
 void displayHeader(){
-  u8g2.clearBuffer();
+  //u8g2.clearBuffer();
+  //u8g2.setFont(u8g2_font_ncenB08_tf); // choose a suitable font
+  u8g2.setDrawColor(0);
+  u8g2.drawBox(0, 0, 150, 17);
+  u8g2.setDrawColor(1);
   if (strcmp(icon,"cloud")==0){
     drawCloud();
   }
@@ -430,7 +519,7 @@ void displayHeader(){
 
 
 void drawSun(){
-  u8g2.clearBuffer();          // clear the internal memory
+  //u8g2.clearBuffer();          // clear the internal memory
   u8g2.drawDisc(15, 8, 3, U8G2_DRAW_ALL);
   for (uint8_t i = 0; i < 8; i++) {
     u8g2.drawLine(15 + 5 * sin(i * 2 * PI / 8), 8 - 5 * cos(i * 2 * PI / 8), 15 + 6 * sin(i * 2 * PI / 8), 8 - 6 * cos(i * 2 * PI / 8));
