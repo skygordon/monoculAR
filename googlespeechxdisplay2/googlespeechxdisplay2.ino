@@ -164,7 +164,6 @@ imu.readAccelData(imu.accelCount);
   if (millis() - second_timer > 1000){
     t[2] += 1;
     if (t[2] >= 60){
-      Serial.println(t[1]);
       t[2] -= 60;
       t[1] += 1;
       displayHeader();
@@ -393,7 +392,6 @@ void update_info_http(){
   time = strtok(NULL,"=");
   pch = strtok(d,"=");
   d = strtok(NULL,"=");
-  Serial.println(time);
   t[0] = atoi(strtok(time,":"));
   t[1] = atoi(strtok(NULL,":"));
   t[2] = atoi(strtok(NULL,":"));
@@ -418,9 +416,15 @@ void displayHeader(){
   float discharge_amt = discharge_from_voltage(voltage, 0.001); //get discharge amount using battery voltage
   drawBattery(1.0 - discharge_amt);
   drawSteps();
-  char time[5] = {0};
-  sprintf(time,"%d:%d",t[0],t[1]);
-  u8g2.drawStr(28,13,time);
+  char timer[6] = {0};
+  if (t[1] < 10){
+    sprintf(timer,"%d:0%d",t[0],t[1]);
+  }
+  else{
+    sprintf(timer,"%d:%d",t[0],t[1]);
+  }
+  Serial.println(timer);
+  u8g2.drawStr(28,13,timer);
   u8g2.sendBuffer();
 }
 
