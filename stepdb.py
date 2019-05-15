@@ -78,11 +78,11 @@ def request_handler(request):
         
     elif (request['method']=="GET"):
         reqday = int(request['values']['day']) # date requested
-        reqmonth = pd.datetime.now().month # current month, i think it is already an int
+        reqmonth = pd.datetime.now().month # current month, could eventually set =int(request['values']['month']) whenever I want to go through the process of making month voice recognition
         if reqday > pd.datetime.now().day:
             return 'Day {} does not exist yet'.format(reqday)
         
-        else:
+        else: # will be useful if I wanted to get month info from clientside
             if reqmonth == 1:
                 pmonth = "January"
             elif reqmonth == 2:
