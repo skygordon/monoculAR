@@ -464,85 +464,91 @@ void doest_thou_speak(){
 }
 
 void get_restaurants() {
+  //call server-side script
   sprintf(request, "GET /sandbox/sc/kevinren/monocular/monocular.py?type=yelp&lat=%f&lon=%f HTTP/1.1\r\n",
           gps.location.lat(), gps.location.lng());
   strcat(request, "Host: 608dev.net\r\n\r\n");
   do_http_request("608dev.net", request, display_response, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
-  char *x = strtok (display_response, "\n");
-  int num = atoi(x);
-  int pos_y = 24;
 
+  //clear the body of the screen
   u8g2.setDrawColor(0);
   u8g2.drawBox(0, 17, 150, 100);
   u8g2.setDrawColor(1);
 
+  int pos_y = 24;
   u8g2.setCursor(5, pos_y);
+  //Parse response
+  char *x = strtok (display_response, "\n");
+  int num = atoi(x); //number of restaurants retrieved
   for (int i = 0; i < num; i++) {
-    char *rest_name = strtok (NULL, "\n");
-    char *star_str = strtok(NULL, "\n");
+    char *rest_name = strtok (NULL, "\n"); //restaurant name
+    char *star_str = strtok(NULL, "\n"); //rating
     int stars = star_str[0] - '0';
     bool half_star = (star_str[1] == '.' && star_str[2] == '5');
-    char *type = strtok(NULL, "\n");
-    char *loc = strtok(NULL, "\n");
-    char *dist = strtok(NULL, "\n");
+    char *type = strtok(NULL, "\n"); //category
+    char *loc = strtok(NULL, "\n"); //location
+    char *dist = strtok(NULL, "\n"); //distance from current user
     u8g2.setFont(u8g2_font_5x7_tf);
     memset(storage, 0, STORAGE_SIZE);
     snprintf(storage, 18, "%d. %s", i + 1, rest_name);
-    u8g2.print(storage);
+    u8g2.print(storage); //prints "n. " and then first 15 characters of name
 
     u8g2.setFont(u8g2_font_unifont_t_symbols);
-    for (int j = 0; j < stars; j++) {
+    for (int j = 0; j < stars; j++) { //draw stars corresponding to rating
       u8g2.drawGlyph(90 + 7 * j, pos_y + 3, 0x2605);
     }
-    if (half_star) {
+    if (half_star) { //half star
       u8g2.drawGlyph(90 + 7 * stars, pos_y + 3, 0x2605);
       u8g2.setDrawColor(0);
       u8g2.drawBox(95 + 7 * stars, pos_y - 6, 3, 7);
       u8g2.setDrawColor(1);
     }
     pos_y += 7;
-    u8g2.setFont(u8g2_font_u8glib_4_tf);
+    u8g2.setFont(u8g2_font_u8glib_4_tf); //smaller font
     u8g2.setCursor(5, pos_y);
     memset(storage, 0, STORAGE_SIZE);
     snprintf(storage, 35, "%s, %s", type, loc);
-    u8g2.print(storage);
+    u8g2.print(storage); //print category and address
     pos_y += 8;
     u8g2.setCursor(5, pos_y);
   }
   u8g2.sendBuffer();
-  u8g2.setFont(u8g2_font_ncenB08_tf); // choose a suitable font
+  u8g2.setFont(u8g2_font_ncenB08_tf); // restore the font
 }
 
 void get_shuttles() {
+  //call server-side script
   sprintf(request, "GET /sandbox/sc/kevinren/monocular/monocular.py?type=shuttle&lat=%f&lon=%f HTTP/1.1\r\n",
           gps.location.lat(), gps.location.lng());
   strcat(request, "Host: 608dev.net\r\n\r\n");
   do_http_request("608dev.net", request, display_response, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
 
+  //clear the body of the screen
   u8g2.setDrawColor(0);
   u8g2.drawBox(0, 17, 150, 100);
   u8g2.setDrawColor(1);
 
+  //Parse the response
   char *stop_name = strtok (display_response, "\n");
-  if (strcmp(stop_name, "0") == 0) {
+  if (strcmp(stop_name, "0") == 0) { //No shuttles
     u8g2.drawStr(10, 24, "Error: No shuttles");
-  } else {
+  } else { //Shuttles!
     int pos_y = 24;
-    u8g2.setCursor(5, pos_y);
-    u8g2.setFont(u8g2_font_5x7_tf);
-    memset(storage, 0, STORAGE_SIZE);
+    u8g2.setCursor(5, pos_y); //starting cursor
+    u8g2.setFont(u8g2_font_5x7_tf); //nice font
+    memset(storage, 0, STORAGE_SIZE); //clear storage buffer
     snprintf(storage, 25, "%s", stop_name);
-    u8g2.print(storage);
+    u8g2.print(storage); //print first 25 chars of name of stop
     char *pch = strtok(NULL, "\n");
-    while (pch != NULL) {
+    while (pch != NULL) { //parse the arrival times
       pos_y += 10;
-      u8g2.setCursor(5, pos_y);
+      u8g2.setCursor(5, pos_y); //move the cursor down
       u8g2.print(pch);
-      pch = strtok(NULL, "\n");
+      pch = strtok(NULL, "\n"); //get the next arrival time
     }
   }
-  u8g2.sendBuffer();
-  u8g2.setFont(u8g2_font_ncenB08_tf); // choose a suitable font
+  u8g2.sendBuffer(); //send changes to screen
+  u8g2.setFont(u8g2_font_ncenB08_tf); // restore the font
 }
 
 //function used to record audio at sample rate for a fixed nmber of samples
